@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Net;
 
-namespace com.walgreens
+namespace com.sample
 {
     public static class SqlExecTimer
     {
@@ -17,6 +17,7 @@ namespace com.walgreens
             var sqlDb = System.Environment.GetEnvironmentVariable("sqlDB");
             var sqlQuery = System.Environment.GetEnvironmentVariable("sqlQuery");
             var tenantid = System.Environment.GetEnvironmentVariable("TENANT_ID");
+            var logAnalyticsQuery = System.Environment.GetEnvironmentVariable("logAnalyticsQuery");
 
             //Get Access Token for SQL DB
             //: API is for Linux Function Apps on Consumption plan
@@ -33,7 +34,7 @@ namespace com.walgreens
             log.LogInformation("Querying the Log Analytics Workspace");
             string workspaceId = System.Environment.GetEnvironmentVariable("LOG_ANALYTICS_WORKSPACE_ID");
             var logAnalytics = new RestLogAnalytics(workspaceId, laTokenGetter.accessToken, log);
-            number_of_events = logAnalytics.query().tables[0].rows.Count;
+            number_of_events = logAnalytics.query(logAnalyticsQuery).tables[0].rows.Count;
             log.LogInformation($"Succeeded in querying: {number_of_events} found.");
 
             if (number_of_events > 0)

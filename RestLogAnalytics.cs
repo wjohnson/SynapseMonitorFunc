@@ -6,8 +6,9 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
 
-namespace com.walgreens
+namespace com.sample
 {
     public class RestLogAnalytics
     {
@@ -22,7 +23,7 @@ namespace com.walgreens
             queryURI = $"https://api.loganalytics.io/v1/workspaces/{workspaceId}/query";
             this.logger = log;
         }
-        public LogAnalyticsResponse query()
+        public LogAnalyticsResponse query(string queryText)
         {
             LogAnalyticsResponse eventsQueryResults;
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(this.queryURI);
@@ -33,7 +34,11 @@ namespace com.walgreens
 
             using (var streamWriter = new StreamWriter(webRequest.GetRequestStream()))
             {
-                string json = "{\"query\":\"AzureActivity | summarize count() by Category\"}";
+                string json = new StringBuilder()
+                    .Append("{\"query\":\"")
+                    .Append(queryText)
+                    .Append("\"}")
+                    .ToString();
 
                 streamWriter.Write(json);
             }

@@ -7,7 +7,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
-namespace com.walgreens
+namespace com.sample
 {
     public class RestAccessTokenGetter
     {

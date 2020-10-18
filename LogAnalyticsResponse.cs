@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace com.walgreens
+namespace com.sample
 {
 
     // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
