@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
@@ -70,11 +68,9 @@ namespace SqlFunc
             {
                 string errorText = String.Format("{0} \n\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : "Acquire token failed");
                 log.LogError(errorText);
-                return new OkResult();
+                return new BadRequestResult();
             }
 
-            // var azureServiceTokenProvider = new AzureServiceTokenProvider();
-            // var accessToken = await azureServiceTokenProvider.GetAccessTokenAsync("https://management.azure.com/", tenantid);
             log.LogInformation(accessToken);
             using (SqlConnection connection = new SqlConnection(sqlDb))
             {
