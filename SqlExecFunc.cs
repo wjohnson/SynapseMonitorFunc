@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 
+using com.sample;
+
 namespace SqlFunc
 {
     public static class SqlExecFunc
@@ -22,69 +24,70 @@ namespace SqlFunc
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            // var config = new ConfigurationBuilder()
-            //     .SetBasePath(context.FunctionAppDirectory)
-            //     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-            //     .AddEnvironmentVariables()
-            //     .Build();
-
             var sqlDb = System.Environment.GetEnvironmentVariable("sqlDB");
             var sqlQuery = System.Environment.GetEnvironmentVariable("sqlQuery");
-            var tenantid = System.Environment.GetEnvironmentVariable("tenantid");
+            string workspaceName = System.Environment.GetEnvironmentVariable("LOG_ANALYTICS_WORKSPACE_NAME");
+            string subscriptionId = System.Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+            string resourceGroup = System.Environment.GetEnvironmentVariable("RESOURCE_GROUP");
+            string alertRuleId = System.Environment.GetEnvironmentVariable("ALERT_RULE_ID");
 
-            log.LogInformation(sqlDb);
-            log.LogInformation(sqlQuery);
-            log.LogInformation(tenantid);
+            log.LogInformation("Getting Database Access Token");
+            var dbTokenGetter = new RestAccessTokenGetter(log, "https://database.windows.net/", "2017-09-01");
+            //Get Access Token for Log Analytics
+            log.LogInformation("Getting Azure Monitor Access Token");
+            var monitorTokenGetter = new RestAccessTokenGetter(log, "https://management.azure.com/", "2017-09-01");
 
-            var identityEndpoint = System.Environment.GetEnvironmentVariable("IDENTITY_ENDPOINT");
-            var identityHeader = System.Environment.GetEnvironmentVariable("IDENTITY_HEADER");
+            int number_of_events = 0;
 
-            log.LogInformation($"Endpoint: {identityEndpoint}");
-            log.LogInformation($"Header: {identityHeader}");
-            var requestURI = $"{identityEndpoint}?resource=https://database.windows.net/&api-version=2017-09-01";
-            log.LogInformation($"requestURI: {requestURI}");
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(requestURI);
-            request.Headers["Metadata"] = "true";
-            request.Method = "GET";
-            request.Headers["secret"] = identityHeader;
-            string accessToken = "NOT SET";
-            log.LogInformation("We are preparing to get the access token");
-            try
+            log.LogInformation("Querying the Azure Monitor Workspace");
+
+            var monitorResults = new Alerts(
+                subscriptionId,
+                resourceGroup,
+                workspaceName,
+                monitorTokenGetter.accessToken,
+                "2019-03-01",
+                log
+            );
+
+            var results = monitorResults.query(alertRuleId);
+
+            number_of_events = results.value.Count;
+            log.LogInformation($"Found {number_of_events} security events");
+
+            if (number_of_events > 0)
             {
-                // Call /token endpoint
-                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
-                // Pipe response Stream to a StreamReader, and extract access token
-                StreamReader streamResponse = new StreamReader(response.GetResponseStream());
-                string stringResponse = streamResponse.ReadToEnd();
-                log.LogInformation("Response:");
-                log.LogInformation(stringResponse);
-                Dictionary<string, string> htmlAttributes = JsonConvert.DeserializeObject<Dictionary<string, string>>(stringResponse);
-                //Dictionary<string, string> list = (Dictionary<string, string>)JsonConvert.DeserializeObject(stringResponse, typeof(Dictionary<string, string>));
-                log.LogInformation("Getting the access token");
-                accessToken = htmlAttributes["access_token"];
-            }
-            catch (Exception e)
-            {
-                string errorText = String.Format("{0} \n\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : "Acquire token failed");
-                log.LogError(errorText);
-                return new BadRequestResult();
-            }
-
-            log.LogInformation(accessToken);
-            using (SqlConnection connection = new SqlConnection(sqlDb))
-            {
-                connection.AccessToken = accessToken;
-
-                using (SqlCommand command = new SqlCommand(sqlQuery, connection))
+                try
                 {
-                    connection.Open();
+                    // Call SQL DB
+                    using (SqlConnection connection = new SqlConnection(sqlDb))
+                    {
+                        connection.AccessToken = dbTokenGetter.accessToken;
 
-                    command.ExecuteNonQuery();
+                        using (SqlCommand command = new SqlCommand(sqlQuery, connection))
+                        {
+                            connection.Open();
+
+                            command.ExecuteNonQuery();
+                            log.LogInformation("Completed the query");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.LogError("Failed to execute SQL query");
+                    string errorText = String.Format("{0} \n\n{1}", e.Message, e.InnerException != null ? e.InnerException.Message : "Failed to Query SQL DB");
+                    log.LogError(errorText);
+                    throw new Exception(errorText);
                 }
             }
-
-            return new OkResult();
+            else
+            {
+                log.LogInformation("No events so no query will be executed.");
+            }
+            return new OkObjectResult(results);
         }
+
     }
 }
