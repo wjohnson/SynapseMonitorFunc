@@ -1,29 +1,16 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using System;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System.Data.SqlClient;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-
-using com.sample;
-
-namespace SqlFunc
+namespace com.sample
 {
-    public static class SqlExecFunc
+    public static class TimerQueryActiveAlerts
     {
-        [FunctionName("SqlExecFunc")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, ExecutionContext context, ILogger log)
+        [FunctionName("TimerQueryActiveAlerts")]
+        public static void Run([TimerTrigger("0 */5 * * * *")] TimerInfo myTimer, ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
             var sqlDb = System.Environment.GetEnvironmentVariable("sqlDB");
             var sqlQuery = System.Environment.GetEnvironmentVariable("sqlQuery");
             string workspaceName = System.Environment.GetEnvironmentVariable("LOG_ANALYTICS_WORKSPACE_NAME");
@@ -86,8 +73,6 @@ namespace SqlFunc
             {
                 log.LogInformation("No events so no query will be executed.");
             }
-            return new OkObjectResult(results);
         }
-
     }
 }

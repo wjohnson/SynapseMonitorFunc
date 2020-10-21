@@ -50,8 +50,6 @@ namespace com.sample
             var paramaterizedURI = paramaterizedURIBuilder
                 .ToString();
 
-            logger.LogInformation(paramaterizedURI);
-
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(paramaterizedURI);
             webRequest.Headers["Metadata"] = "true";
             webRequest.Method = "GET";
