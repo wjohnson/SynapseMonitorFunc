@@ -22,18 +22,21 @@ namespace com.sample
                 var identityEndpoint = System.Environment.GetEnvironmentVariable("IDENTITY_ENDPOINT");
                 var identityHeader = System.Environment.GetEnvironmentVariable("IDENTITY_HEADER");
                 var requestURI = $"{identityEndpoint}?resource={resource}&api-version={apiVersion}";
+                log.LogInformation(requestURI);
                 request = (HttpWebRequest)WebRequest.Create(requestURI);
                 if (apiVersion == "2017-09-01")
                 {
                     //This api version didn't handle things consistently
+                    log.LogInformation("Using the 2017-09-01 version of the API");
                     request.Headers["secret"] = identityHeader;
                 }
                 else
                 {
                     //This is the consistent way of doing this.
+                    log.LogInformation("We are not using the 2017-09-01 version of the API");
                     request.Headers["X-IDENTITY-HEADER"] = identityHeader;
                 }
-                request.Method = "POST";
+                request.Method = "GET";
 
             }
             else

@@ -37,6 +37,7 @@ namespace com.sample
                 log
             );
 
+            log.LogInformation("Preparing to query for any new alerts.");
             var results = monitorResults.query(alertRuleId);
 
             number_of_events = results.value.Count;
@@ -47,6 +48,7 @@ namespace com.sample
 
                 try
                 {
+                    log.LogInformation("Preparing to call SQL DB");
                     // Call SQL DB
                     using (SqlConnection connection = new SqlConnection(sqlDb))
                     {
